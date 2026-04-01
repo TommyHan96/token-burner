@@ -2,27 +2,26 @@
 """
 Token Burner - 一个专门用于消耗大量token的工具
 支持多种策略来最大化token消耗
+支持��个主流大模型API
 """
 
-import anthropic
 import os
 from typing import List, Dict
 import time
 from dotenv import load_dotenv
+from model_adapter import get_adapter
 
 # 加载.env文件中的环境变量
 load_dotenv()
 
 
 class TokenBurner:
-    def __init__(self, api_key: str = None):
-        self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
-        if not self.api_key:
-            raise ValueError(
-                "未找到API Key。请设置ANTHROPIC_API_KEY环境变量或创建.env文件"
-            )
-        self.client = anthropic.Anthropic(api_key=self.api_key)
+    def __init__(self, provider: str = None):
+        self.provider = provider or os.environ.get("MODEL_PROVIDER", "anthropic")
+        self.adapter = get_adapter(self.provider)
+        self.max_tokens = int(os.environ.get("MAX_TOKENS", "8000"))
         self.total_tokens = 0
+        print(f"使用模型提供商: {self.provider}")
 
     def generate_long_text(self, length: int = 10000) -> str:
         """生成超长文本内容"""
@@ -42,14 +41,13 @@ class TokenBurner:
 
         for i in range(rounds):
             print(f"\n=== 第 {i+1} 轮 ===")
-            response = self.client.messages.create(
-                model="claude-opus-4-20250514",
-                max_tokens=8000,
-                messages=[{"role": "user", "content": question}]
+            text, input_tokens, output_tokens = self.adapter.chat(
+                messages=[{"role": "user", "content": question}],
+                max_tokens=self.max_tokens
             )
-            tokens = response.usage.input_tokens + response.usage.output_tokens
+            tokens = input_tokens + output_tokens
             self.total_tokens += tokens
-            print(f"本轮消耗: {tokens} tokens")
+            print(f"本轮消耗: {tokens} tokens (输入: {input_tokens}, 输出: {output_tokens})")
             print(f"累计消耗: {self.total_tokens} tokens")
 
     def strategy_context_accumulation(self, rounds: int = 20):
@@ -63,18 +61,17 @@ class TokenBurner:
                 "content": f"第{i+1}轮: {base_content}\n请总结以上所有内容。"
             })
 
-            response = self.client.messages.create(
-                model="claude-opus-4-20250514",
-                max_tokens=8000,
-                messages=messages
+            text, input_tokens, output_tokens = self.adapter.chat(
+                messages=messages,
+                max_tokens=self.max_tokens
             )
 
             messages.append({
                 "role": "assistant",
-                "content": response.content[0].text
+                "content": text
             })
 
-            tokens = response.usage.input_tokens + response.usage.output_tokens
+            tokens = input_tokens + output_tokens
             self.total_tokens += tokens
             print(f"第 {i+1} 轮 - 消耗: {tokens} tokens, 累计: {self.total_tokens}")
 
@@ -91,12 +88,11 @@ class TokenBurner:
 
 {code}
 """
-        response = self.client.messages.create(
-            model="claude-opus-4-20250514",
-            max_tokens=8000,
-            messages=[{"role": "user", "content": prompt}]
+        text, input_tokens, output_tokens = self.adapter.chat(
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=self.max_tokens
         )
-        tokens = response.usage.input_tokens + response.usage.output_tokens
+        tokens = input_tokens + output_tokens
         self.total_tokens += tokens
         print(f"代码分析消耗: {tokens} tokens")
 
@@ -134,12 +130,11 @@ def complex_function(data):
 3. 提取所有关键信息
 4. 生成综合报告
 """
-        response = self.client.messages.create(
-            model="claude-opus-4-20250514",
-            max_tokens=8000,
-            messages=[{"role": "user", "content": prompt}]
+        text, input_tokens, output_tokens = self.adapter.chat(
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=self.max_tokens
         )
-        tokens = response.usage.input_tokens + response.usage.output_tokens
+        tokens = input_tokens + output_tokens
         self.total_tokens += tokens
         print(f"多文档分析消耗: {tokens} tokens")
 
@@ -152,13 +147,12 @@ def complex_function(data):
             lang = languages[i % len(languages)]
             prompt = f"请将以下文本翻译成{lang}，并详细解释翻译过程:\n\n{text}"
 
-            response = self.client.messages.create(
-                model="claude-opus-4-20250514",
-                max_tokens=8000,
-                messages=[{"role": "user", "content": prompt}]
+            response_text, input_tokens, output_tokens = self.adapter.chat(
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=self.max_tokens
             )
-            text = response.content[0].text
-            tokens = response.usage.input_tokens + response.usage.output_tokens
+            text = response_text
+            tokens = input_tokens + output_tokens
             self.total_tokens += tokens
             print(f"翻译轮次 {i+1} 消耗: {tokens} tokens")
 

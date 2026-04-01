@@ -4,7 +4,6 @@
 """
 
 from main import TokenBurner
-import anthropic
 from dotenv import load_dotenv
 
 # 加载环境变量
@@ -23,12 +22,11 @@ class AdvancedTokenBurner(TokenBurner):
 5. 详细的统计分析
 """ + self.generate_long_text(4000)
 
-        response = self.client.messages.create(
-            model="claude-opus-4-20250514",
-            max_tokens=8000,
-            messages=[{"role": "user", "content": prompt}]
+        text, input_tokens, output_tokens = self.adapter.chat(
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=self.max_tokens
         )
-        tokens = response.usage.input_tokens + response.usage.output_tokens
+        tokens = input_tokens + output_tokens
         self.total_tokens += tokens
         print(f"视觉分析消耗: {tokens} tokens")
 
@@ -45,12 +43,11 @@ class AdvancedTokenBurner(TokenBurner):
 5. 提供详细的逻辑链条
 6. 分析每个推理步骤的置信度
 """
-        response = self.client.messages.create(
-            model="claude-opus-4-20250514",
-            max_tokens=8000,
-            messages=[{"role": "user", "content": prompt}]
+        text, input_tokens, output_tokens = self.adapter.chat(
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=self.max_tokens
         )
-        tokens = response.usage.input_tokens + response.usage.output_tokens
+        tokens = input_tokens + output_tokens
         self.total_tokens += tokens
         print(f"推理链消耗: {tokens} tokens")
 
@@ -66,12 +63,11 @@ class AdvancedTokenBurner(TokenBurner):
 4. 时间线梳理
 5. 每个章节的详细对话
 """
-        response = self.client.messages.create(
-            model="claude-opus-4-20250514",
-            max_tokens=8000,
-            messages=[{"role": "user", "content": prompt}]
+        text, input_tokens, output_tokens = self.adapter.chat(
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=self.max_tokens
         )
-        tokens = response.usage.input_tokens + response.usage.output_tokens
+        tokens = input_tokens + output_tokens
         self.total_tokens += tokens
         print(f"创意写作消耗: {tokens} tokens")
 

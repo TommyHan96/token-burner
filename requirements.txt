@@ -1,2 +1,10 @@
 anthropic>=0.40.0
+openai>=1.0.0
+google-generativeai>=0.3.0
+cohere>=4.0.0
+qianfan>=0.3.0
+dashscope>=1.14.0
+sparkai>=0.0.1
+zhipuai>=2.0.0
 python-dotenv>=1.0.0
+requests>=2.31.0
